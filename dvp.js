@@ -1,3 +1,8 @@
+// Project : DVP_GForms_generation
+// Author : Aubin Tchoï
+// This script is meant to be bound to a certain format of Google Sheets
+
+// Creating the menu
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
   ui.createMenu('Générer un Google Forms')
@@ -6,6 +11,7 @@ function onOpen() {
   .addToUi();
 }
 
+// Generating a Google Forms with data taken from the Sheets
 function gen_Forms() {
   const ui = SpreadsheetApp.getUi(),
       sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Feuille 1"),
@@ -16,13 +22,14 @@ function gen_Forms() {
       .setDescription(sheet.getRange(4, 9, 1, 1).getValues()[0][0])
       .setConfirmationMessage(sheet.getRange(5, 9, 1, 1).getValues()[0][0]);
   
+  // Loading screen
   let htmlLoading = HtmlService
   .createHtmlOutput(`<img src="https://www.demilked.com/magazine/wp-content/uploads/2016/06/gif-animations-replace-loading-screen-14.gif" alt="Loading" width="531" height="299">`)
   .setWidth(540)
   .setHeight(350);
-  
   ui.showModelessDialog(htmlLoading, "Chargement du Google Forms..");
 
+  // First questions
   let first_name = forms.addTextItem()
   .setTitle('Quel est votre prénom ?')
   .setRequired(true),
@@ -33,15 +40,18 @@ function gen_Forms() {
   .setTitle('Quel est votre numéro de portable ?')
   .setRequired(true);
 
+  // That is gonna be the "main" question (each answer is linked to a distinct section)
   var item = forms.addListItem()
   .setTitle('Que souhaitez vous emprunter ?')
   .setRequired(true),
       item_choices = [];
 
-  Logger.log(obj);
+  Logger.log(obj); // Data format is similar to a JSON
 
+  // Each answer to the question "Que souhaitez vous emprunter" generates a distinct section
   obj.forEach(function(row) {
     
+    // new section here + 2 additional questions before forms submission
     let sec = forms.addPageBreakItem()
     .setTitle(row["Bien prêté"])
     .setGoToPage(FormApp.PageNavigationType.SUBMIT),
@@ -53,39 +63,46 @@ function gen_Forms() {
         rmq = forms.addTextItem()
     .setTitle('Une remarque en particulier ?'),
         
+        // As seen in the following regexes, the first 2 numbers in column C will be recognized as the start and the end of the time period.
         start_hour = Math.floor(row["Plage horaire"].match(/([0-9]+)h/gm)[0].match(/[0-9]+/gm)[0]),
         end_hour = Math.floor(row["Plage horaire"].match(/([0-9]+)h/gm)[1].match(/[0-9]+/gm)[0]),
         time_slot = Math.floor(row["Durée d'un créneau"].match(/([0-9]+)/gm)[0]);
     
-    Logger.log(row["Bien prêté"]);
+    Logger.log(`Bien prêté : row["Bien prêté"]`);
     Logger.log(`Heure début : ${start_hour}`);
     Logger.log(`Heure fin : ${end_hour}`);
     Logger.log(`Durée créneau : ${time_slot}`);
-
+    
+    // Hour slots are created by splitting the time period in slots each time_slot long
     let hor_choices = [];
     for (let h_n = start_hour; h_n < end_hour; h_n += time_slot) {
       hor_choices.push(hor.createChoice(`${h_n}h à ${Math.min(h_n + time_slot, end_hour)}h`));
     }
     hor.setChoices(hor_choices);
+
+    // The item is added to a list that will become the list of possible choices to the question "Que souhaitez vous emprunter ?"
     item_choices.push(item.createChoice(row["Bien prêté"], sec));
-    
   item.setChoices(item_choices);
   
   });
 
+  // Setting up the active spreadsheet as a destination in order to be able to update the form.
   forms.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
-  sheet.getRange(2, 9, 1, 1).setValues([[forms.getId()]]).setFontColor('white');
+  sheet.getRange(2, 9, 1, 1).setValues([[forms.getId()]]).setFontColor('white'); // I'm not proud of this
   
+  // This trigger updates the form after every submission, removing the slots he chose
   ScriptApp.newTrigger('update_form')
   .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
   .onFormSubmit()
   .create();
 
+  // Dialog box to print the links (one editor link and a reader link)
   let htmlOutput = HtmlService
   .createHtmlOutput(`<span style="font-family: 'trebuchet ms', sans-serif;">Voci le lien éditeur : <a href = "${forms.getEditUrl()}">${forms.getEditUrl()}</a><br/><br/> Voici le lien lecteur : <a href = "${forms.getPublishedUrl()}">${forms.getPublishedUrl()}</a>.<br/><br/><br/>&nbsp; La bise.<br/>${"&nbsp; ".repeat(16)}</span></span><img src="http://developponts.enpc.org/images/logo_petit.png" alt="DVP" width="115", height="100"><span style='font-size: 12pt;'>`);
   ui.showModelessDialog(htmlOutput, "Un Google Forms a été créé.")
 }
 
+// Updating the Google Forms by removing occupied slots
 function update_form() {
   const ui = SpreadsheetApp.getUi(),
       sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Feuille 1"),
@@ -108,6 +125,7 @@ function update_form() {
   }); 
 }
 
+// Cancelling a reservation
 function cancellation() {
   const ui = SpreadsheetApp.getUi();
   if (sheet.getRange(2, 9, 1, 1).getValues()[0][0] == "") {
