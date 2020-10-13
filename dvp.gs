@@ -2,6 +2,7 @@
 // Author : Aubin Tchoï
 // This script is meant to be bound to a certain format of Google Sheets
 
+
 // Creating the menu
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
@@ -132,17 +133,21 @@ function cancellation() {
     ui.alert("Annulation d'un prêt", "Impossible de trouver le Google Forms associé.", ui.ButtonSet.OK);
     return;
   }
+  
+  // To make it user friendly, reservations are searched by name (lets you choose if a person chose more than 1 slot)
   const forms = FormApp.openById(sheet.getRange(2, 9, 1, 1).getValues()[0][0]),
       first_name = ui.prompt("Annulation d'un prêt", "Quel est le prénom de la personne ?", ui.ButtonSet.OK_CANCEL),
       last_name = ui.prompt("Annulation d'un prêt", "Quel est le nom de la personne ?", ui.ButtonSet.OK_CANCEL),
       formating = str => str.toLowerCase().replace(/[éèê]/gmi, "e"),
       responses = forms.getResponses().filter(resp => formating(resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre prénom ?')[0].getResponse()) == formating(first_name) && formating(resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre nom ?')[0].getResponse()) == formating(last_name));
   
+  // No reservation to that name
   if (responses.length == 0) {
     ui.alert("Annulation d'un prêt", "Impossible de trouver une personne à ce nom.", ui.ButtonSet.OK);
     return;
   }
   
+  // More than 1 reservation to that name
   if (responses.length > 1) {
     let mult = ui.alert("Annulation d'un prêt", "Plusieurs emprunts ont été effectués à ce nom.", ui.ButtonSet.OK_CANCEL);
     if (mult == ui.Button.CANCEL) {
@@ -151,7 +156,7 @@ function cancellation() {
     // Choose a response here and filter responses
     let resp_choices = "";
     responses.forEach(function(rit) {rit.getItemResponses().filter(response => response.getItem().getTitle() == 'Quand en aurez vous besoin ?').getResponse().forEach(function(shift) {resp_choices.push(shift);})});
-    let resp_choice = ui.alert("Annulation d'un prêt", `Quel créneau souhaitez-vous annuler ? (Entrer le numéro correspondant) ${resp_choices.map(it, idx => `\\n ${idx++} ${it}`)}`, ui.ButtonSet.OK_CANCEL);
+    let resp_choice = ui.prompt("Annulation d'un prêt", `Quel créneau souhaitez-vous annuler ? (Entrer le numéro correspondant) ${resp_choices.map(it, idx => `\\n ${idx++} ${it}`)}`, ui.ButtonSet.OK_CANCEL);
     responses.filter(rit => rit.getItemResponses().filter(response => response.getItem().getTitle() == 'Quand en aurez vous besoin ?').getResponse() == resp_choices[Math.floor(resp_choices) - 1]);
   }
   
@@ -161,9 +166,13 @@ function cancellation() {
       checkbox_item = forms.getItemById(cancellation.getItem().getId()).asCheckBoxItem(),
       shifts = checkbox_item.getChoices();
     
+    // Updating the question with cancelled slots
     cancellation.getResponse().forEach(function(hour) {shifts.push(checkbox_item.createChoice(hour));});
     checkbox_item.setChoices(shifts);
+    
+    // Slots are not sorted (possible upgrade)
   }
   
+  // Dialog box to notify the user that the operation is a success
   ui.alert("Annulation d'un prêt", `Le prêt de ${first_name} {last_name} a bien été annulé !`, ui.ButtonSet.OK);
 }
