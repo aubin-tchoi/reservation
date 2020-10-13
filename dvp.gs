@@ -14,6 +14,7 @@ function onOpen() {
 
 // Generating a Google Forms with data taken from the Sheets
 function gen_Forms() {
+  // The position of the cells that contains the informations about the description of the sheet and that of the confirmation message are hard coded
   const ui = SpreadsheetApp.getUi(),
       sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Feuille 1"),
       data = sheet.getRange(2, 2, (sheet.getLastRow() - 1), 3).getValues(),
@@ -53,6 +54,7 @@ function gen_Forms() {
   obj.forEach(function(row) {
     
     // new section here + 2 additional questions before forms submission
+    // You can easily add a description for each item, you just need to add a column with that information and read it here (see : https://developers.google.com/apps-script/reference/forms/page-break-item?hl=en#sethelptexttext)
     let sec = forms.addPageBreakItem()
     .setTitle(row["Bien prêté"])
     .setGoToPage(FormApp.PageNavigationType.SUBMIT),
@@ -91,7 +93,7 @@ function gen_Forms() {
   forms.setDestination(FormApp.DestinationType.SPREADSHEET, SpreadsheetApp.getActiveSpreadsheet().getId());
   sheet.getRange(2, 9, 1, 1).setValues([[forms.getId()]]).setFontColor('white'); // I'm not proud of this
   
-  // This trigger updates the form after every submission, removing the slots he chose
+  // This trigger updates the form after every submission, removing the slots chosen
   ScriptApp.newTrigger('update_form')
   .forSpreadsheet(SpreadsheetApp.getActiveSpreadsheet())
   .onFormSubmit()
