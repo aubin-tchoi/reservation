@@ -135,7 +135,8 @@ function cancellation() {
   const forms = FormApp.openById(sheet.getRange(2, 9, 1, 1).getValues()[0][0]),
       first_name = ui.prompt("Annulation d'un prêt", "Quel est le prénom de la personne ?", ui.ButtonSet.OK_CANCEL),
       last_name = ui.prompt("Annulation d'un prêt", "Quel est le nom de la personne ?", ui.ButtonSet.OK_CANCEL),
-      responses = forms.getResponses().filter(resp => resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre prénom ?')[0].getResponse() == first_name && resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre nom ?')[0].getResponse() == last_name);
+      formating = str => str.toLowerCase().replace(/[éèê]/gmi, "e"),
+      responses = forms.getResponses().filter(resp => formating(resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre prénom ?')[0].getResponse()) == formating(first_name) && formating(resp.getItemResponses().filter(ir => ir.getItem().getTitle() == 'Quel est votre nom ?')[0].getResponse()) == formating(last_name));
   
   if (responses.length == 0) {
     ui.alert("Annulation d'un prêt", "Impossible de trouver une personne à ce nom.", ui.ButtonSet.OK);
@@ -147,7 +148,7 @@ function cancellation() {
     if (mult == ui.Button.CANCEL) {
       return;
     }
-    // Choose a responses here and filter responses
+    // Choose a response here and filter responses
     let resp_choices = "";
     responses.forEach(function(rit) {rit.getItemResponses().filter(response => response.getItem().getTitle() == 'Quand en aurez vous besoin ?').getResponse().forEach(function(shift) {resp_choices.push(shift);})});
     let resp_choice = ui.alert("Annulation d'un prêt", `Quel créneau souhaitez-vous annuler ? (Entrer le numéro correspondant) ${resp_choices.map(it, idx => `\\n ${idx++} ${it}`)}`, ui.ButtonSet.OK_CANCEL);
