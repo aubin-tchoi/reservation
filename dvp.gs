@@ -6,8 +6,8 @@
 // Creating the menu
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('Générer un Google Forms')
-  .addItem('Prêt de matériel', 'gen_Forms')
+  ui.createMenu('Prêt de matériel')
+  .addItem('Générer un Google Forms', 'gen_Forms')
   .addItem('Annulation de prêt', 'cancellation')
   .addToUi();
 }
@@ -130,7 +130,9 @@ function update_form() {
 
 // Cancelling a reservation
 function cancellation() {
-  const ui = SpreadsheetApp.getUi();
+  const ui = SpreadsheetApp.getUi(),
+      sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Feuille 1");
+  
   if (sheet.getRange(2, 9, 1, 1).getValues()[0][0] == "") {
     ui.alert("Annulation d'un prêt", "Impossible de trouver le Google Forms associé.", ui.ButtonSet.OK);
     return;
