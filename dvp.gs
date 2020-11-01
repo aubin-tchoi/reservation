@@ -1,7 +1,7 @@
 // Project : DVP_GForms_generation
 // Author : Aubin Tchoï
 // This script is meant to be bound to a certain format of Google Sheets
-
+// test
 
 // Creating the menu
 function onOpen() {
